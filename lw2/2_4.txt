@@ -1,0 +1,210 @@
+erDiagram
+    %% Многие ко многим
+    %% Клуб может располагаться на многих треках
+    %% Трек может вмещать много клубов
+    RACING_CLUB ||--o{ CLUB_TRACK_LINK : "использует треки"
+    RACE_TRACK ||--o{ CLUB_TRACK_LINK : "принимает клубы"
+
+    %% Один ко многим
+    %% Автомобиль привязан ровно к одному треку
+    %% Трек имеет много автомобилей
+    RACE_TRACK ||--o{ RACE_CAR : "владеет автопарком"
+
+    %% Один ко многим
+    %% Тренер работает в конкретном клубе (на конкретном треке в городе)
+    %% Запись о работе относится к одному тренеру
+    COACH ||--o{ COACH_CLUB_ASSIGNMENT : "работает в клубе"
+
+    %% Связь назначения тренера с клубом и треком
+    RACING_CLUB ||--o{ COACH_CLUB_ASSIGNMENT : "нанимает тренеров"
+    RACE_TRACK ||--o{ COACH_CLUB_ASSIGNMENT : "предоставляет трек для работы"
+    %% Примечание: Логика "одного города" проверяется при вставке данных в эту таблицу
+
+    %% Один ко многим
+    %% Клуб имеет свой набор настроек полей профиля
+    RACING_CLUB ||--o{ CLUB_PROFILE_FIELD : "настраивает поля профиля"
+
+    %% Один ко многим
+    %% Поле типа "Список" имеет набор значений
+    CLUB_PROFILE_FIELD ||--o{ FIELD_OPTION : "имеет варианты значений"
+
+    %% Один ко многим
+    %% Клиент (в контексте конкретного клуба) имеет заполненные значения полей
+    %% Здесь связь идет от клиента к значению, значение ссылается на поле конкретного клуба
+    CLIENT ||--o{ CLIENT_PROFILE_VALUE : "заполняет профиль"
+    CLUB_PROFILE_FIELD ||--o{ CLIENT_PROFILE_VALUE : "определяет тип поля"
+
+    %% Многие ко многим (через BOOKING)
+    %% Теперь бронь привязана к конкретному клубу и треку
+    RACING_CLUB ||--o{ BOOKING : "принимает бронь"
+    RACE_TRACK ||--o{ BOOKING : "предоставляет трек для брони"
+
+    %% Обновленные связи сущностей (остальные как в предыдущей версии)
+    COACH ||--o{ ACHIEVEMENT : "имеет достижения"
+    COACH ||--o{ COACH_CAR_ACCESS : "допуск к авто"
+    RACE_CAR ||--o{ COACH_CAR_ACCESS : "доступен тренеру"
+    COACH }|--|| RACE_CAR : "любит автомобиль"
+    COMM_CHANNEL ||--o{ CLIENT : "привлек клиента"
+    CLIENT ||--o{ CLIENT : "пригласил лидера"
+    COACH ||--o{ COACH_SCHEDULE : "имеет график работы"
+    RACE_CAR ||--o{ CAR_DOWNTIME : "имеет периоды простоя"
+    CLUB_CALENDAR ||--o{ CLUB_HOLIDAY : "имеет выходные дни"
+    BOOKING ||--o{ BOOKING_HOUR : "состоит из часов"
+    CLIENT ||--o{ BOOKING : "бронирует тренировку"
+    COACH ||--o{ BOOKING : "проводит тренировку"
+    RACE_CAR ||--o{ BOOKING : "используется в тренировке"
+
+    RACING_CLUB {
+        int id PK "Уникальный идентификатор клуба"
+        string name "Название клуба"
+        string city "Город расположения"
+        string contact_info "Контакты"
+    }
+
+    RACE_TRACK {
+        int id PK "Уникальный идентификатор трека"
+        string name "Наименование трека"
+        string address "Адрес"
+        float length_km "Протяженность (км)"
+        int max_speed "Максимальная скорость (км/ч)"
+        int difficulty "Сложность (1-10)"
+        string city "Город расположения"
+    }
+
+    CLUB_TRACK_LINK {
+        int club_id PK "Ссылка на клуб"
+        int track_id PK "Ссылка на трек"
+        string contract_details "Детали соглашения"
+    }
+
+    RACE_CAR {
+        int id PK "Уникальный идентификатор"
+        int track_id "Ссылка на трек (автомобиль привязан к треку)"
+        string title "Заголовок/Название"
+        string photo_url "Ссылка на фото"
+        text description "Описание"
+        int horsepower "Количество лошадиных сил"
+        int year_production "Год выпуска"
+        string color "Цвет"
+        string suspension_name "Наименование подвески"
+        boolean is_utilized "Статус: в утилизации"
+        datetime created_at "Дата добавления"
+        datetime updated_at "Дата последнего изменения"
+    }
+
+    COACH_CLUB_ASSIGNMENT {
+        int id PK "Уникальный идентификатор"
+        int coach_id "Ссылка на тренера"
+        int club_id "Ссылка на клуб"
+        int track_id "Ссылка на трек (должен быть связан с клубом и в том же городе)"
+        date start_date "Дата начала работы"
+        date end_date "Дата окончания работы (NULL если текущая)"
+    }
+
+    CLUB_PROFILE_FIELD {
+        int id PK "Уникальный идентификатор"
+        int club_id "Ссылка на клуб (владелец поля)"
+        string field_name "Название поля"
+        string field_type "Тип: text/number/list/boolean"
+        boolean is_required "Обязательное ли поле"
+        int priority "Порядок отображения"
+    }
+
+    FIELD_OPTION {
+        int id PK "Уникальный идентификатор"
+        int field_id "Ссылка на поле профиля"
+        string option_value "Значение варианта"
+        int sort_order "Приоритет сортировки"
+    }
+
+    CLIENT_PROFILE_VALUE {
+        int id PK "Уникальный идентификатор"
+        int client_id "Ссылка на клиента"
+        int field_id "Ссылка на определение поля (к которому принадлежит значение)"
+        string text_value "Текстовое значение (если тип text)"
+        decimal number_value "Числовое значение (если тип number)"
+        int selected_option_id "Ссылка на выбранный вариант (если тип list)"
+    }
+
+    BOOKING {
+        int id PK "Уникальный идентификатор"
+        int client_id "Ссылка на клиента"
+        int coach_id "Ссылка на тренера"
+        int car_id "Ссылка на автомобиль"
+        int club_id "Выбранный клуб"
+        int track_id "Выбранный трек"
+        string customer_request "Пожелания клиента"
+        string status "Статус: забронировано/оплачено/подтверждено/отменено"
+        decimal total_cost "Итоговая стоимость"
+        datetime created_at "Дата создания брони"
+    }
+
+    BOOKING_HOUR {
+        int id PK "Уникальный идентификатор"
+        int booking_id "Ссылка на бронь"
+        date session_date "Дата занятия"
+        int hour_start "Час начала (0-23)"
+        decimal cost_car "Стоимость аренды авто за час"
+        decimal cost_coach "Зарплата тренера за час"
+        decimal club_fee "Комиссия клуба за час"
+    }
+
+    %% Остальные таблицы (CLIENT, COMM_CHANNEL, ACHIEVEMENT, COACH_SCHEDULE, CAR_DOWNTIME, CLUB_HOLIDAY)
+    %% остаются без структурных изменений, кроме возможного удаления дублирующих полей города,
+    %% так как теперь город определяется через связанные сущности Club и Track.
+    CLIENT {
+        int id PK "Уникальный идентификатор"
+        string full_name "ФИО клиента"
+        int birth_year "Год рождения"
+        string photo_url "Фото (опционально)"
+        int channel_id "Ссылка на канал коммуникации"
+        int leader_id "Ссылка на лидера-клиента"
+        string phone_number "Номер телефона"
+        string riding_level "Уровень: новичок/средний/профи/мастер"
+    }
+    COMM_CHANNEL {
+        int id PK
+        string name
+        date start_date
+        date end_date
+    }
+    ACHIEVEMENT {
+        int id PK
+        int coach_id
+        string competition_name
+        date competition_date
+        int place_taken
+    }
+    COACH {
+        int id PK
+        string full_name
+        date birth_date
+        string bank_account_number
+        string photo_url
+        int favorite_car_id
+    }
+    COACH_SCHEDULE {
+        int id PK
+        int coach_id
+        int day_of_week
+        time start_time
+        time end_time
+        date valid_from
+        date valid_to
+    }
+    CAR_DOWNTIME {
+        int id PK
+        int car_id
+        datetime start_datetime
+        datetime end_datetime
+        string reason
+    }
+    CLUB_CALENDAR {
+        int id PK
+        date holiday_date
+        string description
+    }
+    COACH_CAR_ACCESS {
+        int coach_id PK
+        int car_id PK
+    }

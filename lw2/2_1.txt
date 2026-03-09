@@ -1,0 +1,47 @@
+erDiagram
+    %% Один ко многим
+    %% тренер может иметь достижения
+    %% каждое достижение должно принадлежать ровно одному тренеру
+    COACH ||--o{ ACHIEVEMENT : "имеет список достижений"
+    %% Один ко многим
+    %% тренер может тренировать на многих автомобилях
+    %% автомобиль может быть доступен для тренировок многим тренерам
+    COACH ||--o{ COACH_CAR_ACCESS : "может тренировать на"
+    RACE_CAR ||--o{ COACH_CAR_ACCESS : "доступен для тренеров"
+    %% Многие к одному
+    %% многие тренеры могут выбрать один и тот же автомобиль в качестве любимого
+    %% каждый тренер должен иметь ровно один любимый автомобиль
+    COACH }|--|| RACE_CAR : "любит автомобиль"
+
+    RACE_CAR {
+        int id PK "Уникальный идентификатор"
+        string title "Заголовок/Название"
+        string photo_url "Ссылка на фото"
+        text description "Описание"
+        int horsepower "Количество лошадиных сил"
+        int year_production "Год выпуска"
+        string color "Цвет"
+        string suspension_name "Наименование подвески"
+        boolean is_utilized "Статус: в утилизации (true/false)"
+        datetime created_at "Дата добавления"
+        datetime updated_at "Дата последнего изменения"
+    }
+    COACH {
+        int id PK "Уникальный идентификатор"
+        string full_name "ФИО"
+        date birth_date "Дата рождения"
+        string bank_account_number "Номер счета в банке"
+        string photo_url "Фото тренера"
+        int favorite_car_id "ID любимого автомобиля"
+    }
+    ACHIEVEMENT {
+        int id PK "Уникальный идентификатор"
+        int coach_id "Ссылка на тренера"
+        string competition_name "Наименование соревнования"
+        date competition_date "Дата проведения"
+        int place_taken "Занятое место"
+    }
+    COACH_CAR_ACCESS {
+        int coach_id "Ссылка на тренера"
+        int car_id "Ссылка на автомобиль"
+    }
