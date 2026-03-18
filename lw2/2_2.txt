@@ -19,21 +19,38 @@ erDiagram
     %% Запись о просмотре относится ровно к одной новости
     NEWS ||--o{ NEWS_VIEW : "имеет просмотры"
 
+    %% Один к одному (Черновик привязан к новости)
+    NEWS ||--|| NEWS_DRAFT : "имеет черновик"
+
+    %% Один ко многим (Черновик содержит блоки)
+    NEWS_DRAFT ||--o{ NEWS_BLOCK_DRAFT : "содержит блоки"
+
+    NEWS_BLOCK }o--|| BLOCK_CONTENT : "использует контент"
+    NEWS_BLOCK_DRAFT }o--|| BLOCK_CONTENT : "использует контент"
+
     NEWS {
         int id PK "Уникальный идентификатор"
         string title "Заголовок новости"
         boolean is_draft "Статус черновика"
-        datetime created_at "Дата создания"
-        datetime updated_at "Дата обновления"
+    }
+
+    NEWS_DRAFT {
+        int news_id PK "Ссылка на новость"
+        string title "Заголовок черновика"
     }
 
     NEWS_BLOCK {
         int id PK "Уникальный идентификатор"
         int news_id "Ссылка на новость"
         int sort_order "Порядковый номер блока"
-        string type "Тип блока: image/text"
-        text content "Текст или URL изображения"
-        boolean is_first_image "Флаг первого изображения (для миниатюры)"
+        int content_id "Ссылка на контент"
+    }
+
+    NEWS_BLOCK_DRAFT {
+        int id PK "Уникальный идентификатор"
+        int news_id "Ссылка на черновик новости"
+        int sort_order "Порядковый номер блока"
+        int content_id "Ссылка на контент"
     }
 
     COMMENT {
@@ -43,7 +60,6 @@ erDiagram
         text content "Текст комментария"
         string ip_address "IP адрес автора"
         boolean is_deleted "Флаг удаления (мягкое удаление)"
-        datetime created_at "Дата создания"
     }
 
     NEWS_VIEW {
@@ -51,4 +67,10 @@ erDiagram
         int news_id "Ссылка на новость"
         string ip_address "IP адрес зрителя"
         datetime viewed_at "Дата и время просмотра"
+    }
+
+    BLOCK_CONTENT {
+        int id PK
+        string type "Тип: image/text"
+        text data "Текст или URL изображения"
     }
