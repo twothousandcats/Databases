@@ -1,14 +1,55 @@
-CREATE DATABASE IF NOT EXISTS news_feed;
-USE news_feed;
+CREATE DATABASE IF NOT EXISTS news_bd;
+USE news_bd;
+
+-- Table `author_profile`
+CREATE TABLE IF NOT EXISTS author_profile (
+    id CHAR(36) NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    bio TEXT NULL,
+    avatar_url VARCHAR(255) NULL,
+    twitter_handle VARCHAR(50) NULL,
+    is_verified TINYINT(1) NOT NULL DEFAULT 0,
+    email VARCHAR(255) NOT NULL,
+    joined_date DATE NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE INDEX uq_author_email (email ASC)
+    ) ENGINE = InnoDB;
+
+-- Table `media_asset`
+CREATE TABLE IF NOT EXISTS media_asset (
+    id CHAR(36) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(100) NOT NULL,
+    file_size_bytes BIGINT UNSIGNED NOT NULL,
+    storage_path VARCHAR(500) NOT NULL,
+    checksum_sha256 CHAR(64) NOT NULL,
+    uploaded_by CHAR(36) NULL,
+    uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE INDEX uq_media_checksum (checksum_sha256 ASC),
+    CONSTRAINT fk_media_uploader
+    FOREIGN KEY (user_id)
+    REFERENCES author_profile (id)
+    ON DELETE SET NULL
+) ENGINE = InnoDB;
 
 -- `block_content`
 CREATE TABLE IF NOT EXISTS block_content (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    type ENUM('text', 'image', 'video', 'code') NOT NULL,
-    data TEXT NOT NULL,
+    `type` ENUM('text', 'image', 'video') NOT NULL,
+    `data` TEXT NOT NULL,
+    media_asset_id CHAR(36) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
-) ENGINE = InnoDB;
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_block_content_media
+    FOREIGN KEY (media_asset_id)
+    REFERENCES media_asset (id)
+    ON DELETE SET NULL
+    ON UPDATE NO ACTION
+    ) ENGINE = InnoDB;
 
 -- `news`
 CREATE TABLE IF NOT EXISTS news (
@@ -17,22 +58,24 @@ CREATE TABLE IF NOT EXISTS news (
     is_draft TINYINT(1) NOT NULL DEFAULT 1,
     priority INT NOT NULL DEFAULT 0,
     is_pinned TINYINT(1) NOT NULL DEFAULT 0,
-    published_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE INDEX uq_news_title_draft (title ASC, is_draft ASC)
-) ENGINE = InnoDB;
+    ) ENGINE = InnoDB;
 
 -- `news_draft`
 CREATE TABLE IF NOT EXISTS news_draft (
     news_id INT UNSIGNED NOT NULL,
     title VARCHAR(255) NOT NULL,
-    last_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (news_id),
     CONSTRAINT fk_news_draft_news
-        FOREIGN KEY (news_id)
-        REFERENCES news (id)
-        ON DELETE CASCADE
-        ON UPDATE NO ACTION
+    FOREIGN KEY (news_id)
+    REFERENCES news (id)
+                                                           ON DELETE CASCADE
+                                                           ON UPDATE NO ACTION
     ) ENGINE = InnoDB;
 
 
@@ -88,22 +131,23 @@ CREATE TABLE IF NOT EXISTS comment (
     content TEXT NOT NULL,
     ip_address VARCHAR(45) NOT NULL,
     is_deleted TINYINT(1) NOT NULL DEFAULT 0,
-    edited_at DATETIME NULL,
     likes_count INT UNSIGNED NOT NULL DEFAULT 0,
     user_agent VARCHAR(255) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     INDEX idx_comment_news (news_id ASC),
     INDEX idx_comment_parent (parent_comment_id ASC),
     CONSTRAINT fk_comment_news
     FOREIGN KEY (news_id)
     REFERENCES news (id)
-    ON DELETE CASCADE
-    ON UPDATE NO ACTION,
+        ON DELETE CASCADE
+        ON UPDATE NO ACTION,
     CONSTRAINT fk_comment_parent
     FOREIGN KEY (parent_comment_id)
     REFERENCES comment (id)
-    ON DELETE SET NULL
-    ON UPDATE NO ACTION
+        ON DELETE SET NULL
+        ON UPDATE NO ACTION
     ) ENGINE = InnoDB;
 
 -- Table `news_view`
@@ -112,29 +156,14 @@ CREATE TABLE IF NOT EXISTS news_view (
     news_id INT UNSIGNED NOT NULL,
     ip_address VARCHAR(45) NOT NULL,
     viewed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    session_id VARCHAR(64) NULL,
     PRIMARY KEY (id),
     INDEX idx_view_news (news_id ASC),
     UNIQUE INDEX uq_view_unique (news_id ASC, ip_address ASC, viewed_at ASC),
     CONSTRAINT fk_view_news
     FOREIGN KEY (news_id)
-    REFERENCES news (id)
-    ON DELETE CASCADE
-    ON UPDATE NO ACTION
-    ) ENGINE = InnoDB;
-
--- Table `author_profile`
-CREATE TABLE IF NOT EXISTS author_profile (
-    id CHAR(36) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    bio TEXT NULL,
-    avatar_url VARCHAR(255) NULL,
-    twitter_handle VARCHAR(50) NULL,
-    joined_date DATE NOT NULL,
-    is_verified TINYINT(1) NOT NULL DEFAULT 0,
-    email VARCHAR(255) NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE INDEX uq_author_email (email ASC)
+        REFERENCES news (id)
+        ON DELETE CASCADE
+        ON UPDATE NO ACTION
     ) ENGINE = InnoDB;
 
 -- Table `news_author_link`
@@ -143,42 +172,17 @@ CREATE TABLE IF NOT EXISTS news_author_link (
     author_id CHAR(36) NOT NULL,
     role ENUM('main', 'co-author', 'editor') NOT NULL,
     contribution_percent INT UNSIGNED NULL,
-    approved_at DATETIME NULL,
     order_index INT NOT NULL DEFAULT 0,
+    approved_at DATETIME NULL,
     PRIMARY KEY (news_id, author_id),
     INDEX idx_link_author (author_id ASC),
     UNIQUE INDEX uq_link_order (news_id ASC, order_index ASC),
     CONSTRAINT fk_link_news
-    FOREIGN KEY (news_id)
-    REFERENCES news (id)
-    ON DELETE CASCADE,
+        FOREIGN KEY (news_id)
+        REFERENCES news (id)
+        ON DELETE CASCADE,
     CONSTRAINT fk_link_author
-    FOREIGN KEY (author_id)
-    REFERENCES author_profile (id)
-    ON DELETE CASCADE
-    ) ENGINE = InnoDB;
-
-
--- Table `media_asset`
-CREATE TABLE IF NOT EXISTS media_asset (
-    id CHAR(36) NOT NULL,
-    block_content_id INT UNSIGNED NULL, -- block_content link
-    uploader_id CHAR(36) NULL, -- author_profile link
-    file_name VARCHAR(255) NOT NULL,
-    mime_type VARCHAR(100) NOT NULL,
-    file_size_bytes BIGINT UNSIGNED NOT NULL,
-    storage_path VARCHAR(500) NOT NULL,
-    checksum_sha256 CHAR(64) NOT NULL, -- crypt hash(damaged/duplicates)
-    uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    is_public TINYINT(1) NOT NULL DEFAULT 1,
-    PRIMARY KEY (id),
-    UNIQUE INDEX uq_media_checksum (checksum_sha256 ASC), -- гарант уникальности кортежа по checksum_sha256
-    CONSTRAINT fk_media_block -- явно идентифицируем ограничение
-        FOREIGN KEY (block_content_id) -- привязка к id в block_content
-        REFERENCES block_content (id)
-        ON DELETE SET NULL,
-    CONSTRAINT fk_media_uploader
-        FOREIGN KEY (uploader_id) -- привязка к id в author_profile
+        FOREIGN KEY (author_id)
         REFERENCES author_profile (id)
-        ON DELETE SET NULL
+        ON DELETE CASCADE
     ) ENGINE = InnoDB;
