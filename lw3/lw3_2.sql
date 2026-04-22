@@ -9,6 +9,8 @@ INSERT IGNORE INTO author_profile (id, full_name, bio, joined_date, email)
 VALUES ('b2c3d4e5-f6g7-8901-bcde-fg2345678901', 'Anna Smirnova', 'Editor', '2023-02-20', 'anna@example.com');
 
 -- обновы
+-- todo: объяснить почему обновляет, а не создает при изменении идентификатора
+-- id - primary key, email - unique index
 INSERT INTO author_profile (id, full_name, bio, joined_date, is_verified, email)
 VALUES ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Ivan Petrov Updated', 'Senior Tech Journalist', '2023-01-15', 1, 'ivan@example.com')
     ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), bio = VALUES(bio), updated_at = NOW();

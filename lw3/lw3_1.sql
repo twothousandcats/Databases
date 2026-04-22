@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS media_asset (
     PRIMARY KEY (id),
     UNIQUE INDEX uq_media_checksum (checksum_sha256 ASC),
     CONSTRAINT fk_media_uploader
-    FOREIGN KEY (user_id)
+    FOREIGN KEY (uploaded_by)
     REFERENCES author_profile (id)
     ON DELETE SET NULL
 ) ENGINE = InnoDB;
