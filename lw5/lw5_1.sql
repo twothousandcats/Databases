@@ -86,7 +86,7 @@ WHERE t.ancestor = 2;
 -- поиск конкретного листа
 SELECT d.*
 FROM directories d
-         LEFT JOIN dir_tree t ON d.id = t.ancestor AND t.depth > 0
+         LEFT JOIN dir_tree t ON d.id = t.ancestor AND t.depth > 0 -- нужны узлы, у которых нет потомков
 WHERE t.ancestor IS NULL
   AND d.name = 'music';
 
@@ -117,6 +117,7 @@ WHERE id IN (SELECT descendant
 -- связи удалятся сами (ON DELETE CASCADE)
 
 -- Вставку 3 элементов в одного родителя
+-- транзакцией?
 INSERT IGNORE INTO directories (name)
 VALUES ('apache'),
        ('ssh'),
@@ -147,11 +148,17 @@ WHERE descendant = 8;
 DELETE IGNORE
 FROM directories
 WHERE id IN (5, 7);
+-- todo: останутся потомки в directories
+-- изменение:
+DELETE
+FROM directories
+WHERE id IN (SELECT descendant
+             FROM dir_tree
+             WHERE ancestor IN (5, 7));
 
 -- Перемещение элемента в другое поддерево
 -- user1 от home к var
-START TRANSACTION;
-
+-- транзакцией?
 WITH subtree AS (SELECT descendant
                  FROM dir_tree
                  WHERE ancestor = 3)
@@ -161,12 +168,9 @@ WHERE descendant IN (SELECT descendant
                      FROM subtree)
   AND ancestor NOT IN (SELECT descendant
                        FROM subtree);
-
 INSERT INTO dir_tree (ancestor, descendant, depth)
 SELECT super.ancestor, sub.descendant, super.depth + sub.depth + 1
 FROM dir_tree super -- предки нового родителя
          JOIN dir_tree sub -- потомки корня перемещаемого поддерева(user1 включительно)
 WHERE super.descendant = 10
   AND sub.ancestor = 3;
-
-COMMIT;
